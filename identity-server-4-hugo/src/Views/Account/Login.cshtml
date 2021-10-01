@@ -1,0 +1,33 @@
+@model LoginViewModel
+
+    <div class="login-page">
+
+
+        <partial name="_ValidationSummary" />
+
+        <div class="row">
+
+            @if (Model.EnableLocalLogin)
+            {
+                @Html.Partial("_LoginLocalPartial");
+            }
+
+            @if (Model.VisibleExternalProviders.Any() && (Model.EnableB2CLogin || Model.EnableB2CLogin_2)) 
+            {
+                @Html.Partial("_LoginB2CPartial");
+            }
+
+
+            @if (Model.VisibleExternalProviders.Any() && Model.EnableB2BLogin)
+            {
+                @Html.Partial("_LoginB2BPartial");
+            }
+            @if (!Model.EnableLocalLogin && !Model.VisibleExternalProviders.Any())
+            {
+                <div class="alert alert-warning">
+                    <strong>Invalid login request</strong>
+                    There are no login schemes configured for this request.
+                </div>
+            }
+        </div>
+</div>

@@ -1,0 +1,26 @@
+﻿@model LoginViewModel
+<div class="col-md-6 offset-md-3">
+
+    @foreach (var provider in Model.VisibleExternalProviders.Where(p => p.AuthenticationScheme != "b2b"))
+    {
+        <div class="card mt-5">
+            <div class="card-body">
+                <div class="intro">
+                    <h2 aria-level="1">
+                        @provider.DisplayName
+                    </h2>
+                </div>
+                <div class="buttons">
+                    <a class="link-button full-width"
+                       asp-controller="External"
+                       asp-action="Challenge"
+                       asp-route-scheme="@provider.AuthenticationScheme"
+                       asp-route-returnUrl="@Model.ReturnUrl">
+                        Login
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    }
+</div>

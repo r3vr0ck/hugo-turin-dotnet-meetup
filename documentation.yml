@@ -1,0 +1,123 @@
+trigger:
+  branches:
+    include:
+    - refs/heads/main
+    - refs/pull/*/merge
+  paths:
+    include:
+    - documentation
+stages:
+- stage: BUILD
+  jobs:
+  - job: Job_1
+    displayName: Agent job 1
+    pool:
+      vmImage: vs2017-win2016
+    steps:
+    - checkout: self
+    - task: Npm@1
+      displayName: npm install
+      inputs:
+        verbose: false
+        workingDir: documentation
+    - task: CmdLine@2
+      displayName: Build site
+      inputs:
+        script: >
+          $(Build.SourcesDirectory)\documentation\deploy\hugo.exe -s $(Build.SourcesDirectory)\documentation\ -d $(Build.ArtifactStagingDirectory)\docs-assets --log -v
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifact: drop'   
+
+- stage: DOC_WEBSITE_PR
+  displayName: PULL_REQUEST
+  condition: and(succeeded('BUILD'), ne(variables['Build.SourceBranch'], 'refs/heads/main'))
+  variables:
+    FTP_PWD: $(ftp_password)
+  jobs:
+  - job: Agent_job
+    displayName: Agent job
+    pool:
+      vmImage: vs2017-win2016
+    steps:
+    - task: Bash@3
+      inputs:
+        targetType: 'inline'
+        script: 'env | sort'
+    - task: DownloadPipelineArtifact@2
+      displayName: 'Download Build Artifacts'
+      inputs:
+       path: '$(Build.ArtifactStagingDirectory)'
+    - task: FtpUpload@2
+      displayName: FTP Upload to wwwroot
+      env:
+       SYSTEM_PULLREQUEST_PULLREQUESTID: $(System.PullRequest.PullRequestId)
+      inputs:
+        credentialsOption: inputs
+        serverUrl: $(FTP_SERVER_URL)
+        username: $(FTP_USERNAME)
+        password: $(FTP_PWD)
+        rootDirectory: '"$(Build.ArtifactStagingDirectory)/drop/docs-assets/"'
+        remoteDirectory: '/site/wwwroot/wwwroot/pr-$(System.PullRequest.PullRequestId)/'
+        clean: true
+        preservePaths: true
+    - task: PowerShell@2
+      displayName: Create PR comment
+      env:
+       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+      inputs:
+        targetType: inline
+        script: |
+          $StatusCode = 1
+          $PrWebsiteUrl = "${env:SITE_NAME}/pr-$($env:SYSTEM_PULLREQUEST_PULLREQUESTID)/docs/"
+          #Build Up a Markdown Message to
+          $Markdown = @"
+          ## PR website
+          [Hugo-Docs-PR-$($env:SYSTEM_PULLREQUEST_PULLREQUESTID)]($PrWebsiteUrl)
+          "@
+          #Build the JSON body up
+          $body = @"
+          { "comments": [{"parentCommentId": 0,"content": "$Markdown","commentType": 1}],"status": $StatusCode}
+          "@
+          Write-Debug $Body
+          #Post the message to the Pull Request
+          #https://docs.microsoft.com/en-us/rest/api/azure/devops/git/pull%20request%20threads?view=azure-devops-rest-5.1
+          try {
+              $url = "$($env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI)$env:SYSTEM_TEAMPROJECTID/_apis/git/repositories/$($env:Build_Repository_Name)/pullRequests/$($env:SYSTEM_PULLREQUEST_PULLREQUESTID)/threads?api-version=5.1"
+              Write-Host "URL: $url"
+              $response = Invoke-RestMethod -Uri $url -Method POST -Headers @{Authorization = "Bearer $env:SYSTEM_ACCESSTOKEN"} -Body $Body -ContentType application/json
+            if ($response -ne $Null) {
+              Write-Host "*******************$response*********************************"
+            }
+          }
+          catch {
+            Write-Error $_
+            Write-Error $_.Exception.Message
+          }
+
+- stage: DOC_WEBSITE_DEV
+  displayName: DEVELOPMENT
+  dependsOn: BUILD
+  condition: and(succeeded('BUILD'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  variables:
+    FTP_PWD: $(ftp_password)
+  jobs:
+  - job: Agent_job
+    displayName: Agent job
+    pool:
+      vmImage: vs2017-win2016
+    steps:
+    - task: DownloadPipelineArtifact@2
+      displayName: 'Download Build Artifacts'
+      inputs:
+       path: '$(Build.ArtifactStagingDirectory)'
+    - task: FtpUpload@2
+      displayName: FTP Upload to wwwroot
+      inputs:
+        credentialsOption: inputs
+        serverUrl: $(FTP_SERVER_URL)
+        username: $(FTP_USERNAME)
+        password: $(FTP_PWD)
+        rootDirectory: '"$(Build.ArtifactStagingDirectory)/drop/docs-assets/"'
+        remoteDirectory: /site/wwwroot/wwwroot/
+        clean: true
+        preservePaths: true

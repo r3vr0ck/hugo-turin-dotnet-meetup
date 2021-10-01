@@ -1,0 +1,15 @@
+<a class="nav-link dropdown-toggle" href="#" id="navbarDropdownUserMenu" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    Hello User
+</a>
+
+<div class="dropdown-menu dropdown-user-menu-right user-menu-container" aria-labelledby="navbarDropdownUserMenuLink">
+    <a class="dropdown-item" href="{{ .Language.Params.main_site_url }}">Back to main site</a>
+</div>
+
+<script>
+(function() {
+    var userMenuHeader = $("#navbarDropdownUserMenu");
+    var decodedCookie = decodeURIComponent(document.cookie.match('(^|;)\\s*' + 'given_name' + '\\s*=\\s*([^;]+)')?.pop() || 'User');
+    $(userMenuHeader).text("Hello " + decodedCookie);
+})();
+</script>
