@@ -104,7 +104,7 @@ namespace AuthFlowHugoApp
                     }
                     else
                     {
-                        if (ctx.Context.Request.Cookies["first_name"] == null)
+                        if (ctx.Context.Request.Cookies["given_name"] == null)
                         {
                             ctx.Context.Response.Cookies.Append(
                                 "given_name",

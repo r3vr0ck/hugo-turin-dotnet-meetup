@@ -37,13 +37,13 @@ To handle the redirect and authorization over static files the UseStaticFiles me
             }
             else
             {
-                // sets the first_name cookie, retrieving it from the user claims 
+                // sets the given_name cookie, retrieving it from the user claims 
                 // can be used to show the authenticated user in the documentation static pages via js/html
-                if (ctx.Context.Request.Cookies["first_name"] == null)
+                if (ctx.Context.Request.Cookies["given_name"] == null)
                 {
                     ctx.Context.Response.Cookies.Append(
-                        "first_name",
-                        ctx.Context.User.Claims.FirstOrDefault(f => f.Type == "firstName")?.Value ?? ctx.Context.User.Identity.Name ?? "",
+                        "given_name",
+                        ctx.Context.User.Claims.FirstOrDefault(f => f.Type == "given_name")?.Value ?? ctx.Context.User.Identity.Name ?? "",
                         new CookieOptions()
                         {
                             Path = "/",

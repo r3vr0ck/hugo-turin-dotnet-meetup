@@ -23,7 +23,7 @@ namespace AuthFlowHugoApp.Controllers
 
         public IActionResult Signout()
         {
-            Response.Cookies.Delete("first_name", new CookieOptions()
+            Response.Cookies.Delete("given_name", new CookieOptions()
             {
                 Secure = true,
             });
